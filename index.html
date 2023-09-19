@@ -1,4 +1,35 @@
----
-layout: home
-author_profile: true
----
+<html>
+
+<head>
+    <title>블로그....일지도</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+
+    <h1>블로그...일지도</h1>
+
+    <!-- markdown source -->
+    <div class="source">
+- [TSUKIAKARI_NO_MICHISHIRUBE/ stereopony 가사](_posts/2023-09-10-TSUKIAKARI_NO_MICHISHIRUBE_stereopony.html)
+- [Telescope / toko 가사](_posts/2023-09-19-Telescope-toko-lyrics.html)
+    </div>
+
+    <!-- markdown result -->
+    <div class="result">
+    </div>
+
+    <script type='text/javascript' async=false defer=false src="./lib/marked.min.js"></script>
+    <script type='text/javascript'>
+        document.body.onload = () => {
+            // get markdown source
+            var source = document.querySelector('.source').innerHTML;
+            // convert markdown to html
+            var result = marked.marked(source);
+            // put result to html
+            document.querySelector('.result').innerHTML = result;
+        };
+    </script>
+
+</body>
+</html>

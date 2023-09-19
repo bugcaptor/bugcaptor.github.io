@@ -1,8 +1,16 @@
----
-title: "ツキアカリのミチシルベ/Stereopony 가사"
-date: 2023-09-10 11:50:28 +0900
-categories: 노래 가사 덕질 오타쿠 일본 노래
----
+<html>
+
+<head>
+    <title>ツキアカリのミチシルベ/Stereopony 가사</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <!-- markdown source -->
+    <div class="source">
+
+[HOME](../index.html)
 
 ツキアカリのミチシルベ/Stereopony
 
@@ -101,3 +109,24 @@ categories: 노래 가사 덕질 오타쿠 일본 노래
 
 どこまででも
 어디까지든.
+
+</div>
+
+<!-- markdown result -->
+<div class="result">
+</div>
+
+<script type='text/javascript' async=false defer=false src="../lib/marked.min.js"></script>
+<script type='text/javascript'>
+    document.body.onload = () => {
+        // get markdown source
+        var source = document.querySelector('.source').innerHTML;
+        // convert markdown to html
+        var result = marked.marked(source);
+        // put result to html
+        document.querySelector('.result').innerHTML = result;
+    };
+</script>
+
+</body>
+</html>
