@@ -68,9 +68,9 @@ export class Space {
 	// webgl default is x(right), y(up), z(out of screen = towards the viewer) = right-handed coordinate system.
 	cameraPosition: Vector3 = { x: 0, y: 0, z: 0 };
 	cameraDirection: Vector3 = { x: 0, y: 0, z: -1 };
+	originalFlowDirection: Vector3 = { x: 0, y: 0, z: 1 };
+	flowDirection: Vector3 = { x: 0, y: 0, z: 1 };
 	stars: Star[] = [];
-
-	prevTimeStamp: number = 0;
 
 	shaderProgram: WebGLProgram;
 	vertexBuffer: WebGLBuffer;
@@ -83,7 +83,6 @@ export class Space {
 		this.canvas.height = this.canvas.clientHeight;
 		this.context = this.canvas.getContext('webgl')!;
 		this.context.viewport(0, 0, this.canvas.width, this.canvas.height);
-		this.prevTimeStamp = performance.now();
 		this.shaderProgram = this.context.createProgram()!;
 		this.vertexBuffer = this.context.createBuffer()!;
 	}
@@ -145,7 +144,6 @@ void main() {
 
 	initiateStars() {
 		this.alpha = 0.0;
-		this.prevTimeStamp = performance.now();
 		this.stars = [];
 		this.stars.push({ // default test star.
 			position: { x: 0, y: 0, z: -5 },
@@ -204,11 +202,13 @@ void main() {
 		this.stars.forEach(star => {
 			let position = star.position;
 			// move the star against the camera direction.
-			position = vectorSubtract(position, vectorMultiplyScalar(this.cameraDirection, flowAmount * star.speedRatio));
+			position = vectorAdd(position, vectorMultiplyScalar(this.flowDirection, flowAmount * star.speedRatio));
 			star.alpha = clampValue(star.alpha + dt * star.speedRatio, 0.0, 1.0);
-			if (Math.abs(position.z) > STAR_VISUAL_RANGE ||
+			const outOfVisualRange = Math.abs(position.z) > STAR_VISUAL_RANGE ||
 				Math.abs(position.x) > STAR_VISUAL_RANGE ||
-				Math.abs(position.y) > STAR_VISUAL_RANGE) {
+				Math.abs(position.y) > STAR_VISUAL_RANGE;
+			const outOfScreen = dotProduct(position, this.cameraDirection) < 0;
+			if (outOfVisualRange || outOfScreen) {
 				position.x = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
 				position.y = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
 				position.z = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
@@ -298,12 +298,6 @@ void main() {
 	}
 
 	render() {
-		const nowTimeStamp = performance.now();
-		const deltaTimeSec = (nowTimeStamp - this.prevTimeStamp) * 0.001;
-		this.prevTimeStamp = nowTimeStamp;
-
-		this.flowStars(deltaTimeSec);
-
 		this.updateVertexBuffer();
 
 		// clear black.
@@ -350,5 +344,30 @@ void main() {
 
 		// Draw points
 		gl.drawArrays(gl.POINTS, 0, this.stars.length);
+	}
+
+	setFlowDirection(yaw: number, pitch: number) {
+		// rotate only cameraDirection vector.
+		const flowDirection = this.originalFlowDirection;
+
+		// rotate around y-axis.
+		const cosYaw = Math.cos(yaw);
+		const sinYaw = Math.sin(yaw);
+		const newCameraDirection = {
+			x: flowDirection.x * cosYaw - flowDirection.z * sinYaw,
+			y: flowDirection.y,
+			z: flowDirection.x * sinYaw + flowDirection.z * cosYaw
+		};
+
+		// rotate around x-axis.
+		const cosPitch = Math.cos(pitch);
+		const sinPitch = Math.sin(pitch);
+		const newCameraDirection2 = {
+			x: newCameraDirection.x,
+			y: newCameraDirection.y * cosPitch - newCameraDirection.z * sinPitch,
+			z: newCameraDirection.y * sinPitch + newCameraDirection.z * cosPitch
+		};
+
+		this.flowDirection = newCameraDirection2;
 	}
 }
