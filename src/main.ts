@@ -14,7 +14,7 @@ function startApp() {
   let rotatePitch = 0;
   const rotateMax = Math.PI / 3;
   const rotateAmount = Math.PI / 4;
-  let rotateYawPushed = false;
+  //let rotateYawPushed = false;
   let pitchUpPushed = false;
   let pitchDownPushed = false;
 
@@ -37,8 +37,8 @@ function startApp() {
     checkRotateDown(e.clientX, e.clientY, true);
   });
 
-  canvas.addEventListener('touchmove', (e) => {
-  });
+  // canvas.addEventListener('touchmove', (e) => {
+  // });
 
   canvas.addEventListener('touchend', (e) => {
     if (e.touches.length > 0) {

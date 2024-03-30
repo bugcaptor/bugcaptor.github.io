@@ -9,9 +9,9 @@ function vectorAdd(a: Vector3, b: Vector3): Vector3 {
 	return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
 }
 
-function vectorSubtract(a: Vector3, b: Vector3): Vector3 {
-	return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
-}
+// function vectorSubtract(a: Vector3, b: Vector3): Vector3 {
+// 	return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+// }
 
 function vectorMultiplyScalar(a: Vector3, b: number): Vector3 {
 	return { x: a.x * b, y: a.y * b, z: a.z * b };
