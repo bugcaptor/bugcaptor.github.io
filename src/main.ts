@@ -1,13 +1,20 @@
 import './style.css';
-import { marked } from 'marked';
+import { Space } from './space';
 
 function startApp() {
   console.log('App started');
-  const mainMarkdownContent_e = document.getElementById('main-markdown-content') as HTMLDivElement;
-  const mainMarkdownContent = mainMarkdownContent_e.innerHTML;
-  console.log(mainMarkdownContent);
-  const markdownContent = marked(mainMarkdownContent) as string;
-  mainMarkdownContent_e.innerHTML = markdownContent;
+
+  const canvas = document.getElementById('game') as HTMLCanvasElement;
+  const space = new Space(canvas);
+
+  space.start();
+  // loop to render the game
+  function gameLoop() {
+    space.render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
 }
 
 // when the page is loaded, the script will be executed
