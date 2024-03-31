@@ -1,25 +1,5 @@
-
-interface Vector3 {
-	x: number;
-	y: number;
-	z: number;
-}
-
-function vectorAdd(a: Vector3, b: Vector3): Vector3 {
-	return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
-}
-
-// function vectorSubtract(a: Vector3, b: Vector3): Vector3 {
-// 	return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
-// }
-
-function vectorMultiplyScalar(a: Vector3, b: number): Vector3 {
-	return { x: a.x * b, y: a.y * b, z: a.z * b };
-}
-
-function dotProduct(a: Vector3, b: Vector3): number {
-	return a.x * b.x + a.y * b.y + a.z * b.z;
-}
+import { RendererInterface } from './renderer';
+import { Vector3, clampValue, createShader, dotProduct, pickWeightedRandom, rangedRandom, vectorAdd, vectorMultiplyScalar } from './utility';
 
 interface Star {
 	position: Vector3;
@@ -29,39 +9,11 @@ interface Star {
 	alpha: number;
 }
 
-function rangedRandom(min: number, max: number): number {
-	return Math.random() * (max - min) + min;
-}
-
-function clampValue(value: number, min: number, max: number): number {
-	return Math.min(Math.max(value, min), max);
-}
-
-function createShader(gl: WebGLRenderingContext, type: number, source: string) {
-	const shader = gl.createShader(type)!;
-	gl.shaderSource(shader, source);
-	gl.compileShader(shader);
-	return shader;
-}
-
-function pickWeightedRandom<ValueType>(weightedRandomArray: [ValueType, number][]): ValueType {
-	const totalWeight = weightedRandomArray.reduce((acc, val) => acc + val[1], 0);
-	const randomValue = Math.random() * totalWeight;
-	let currentWeight = 0;
-	for (const [value, weight] of weightedRandomArray) {
-		currentWeight += weight;
-		if (randomValue <= currentWeight) {
-			return value;
-		}
-	}
-	return weightedRandomArray[weightedRandomArray.length - 1][0];
-}
-
 const STAR_VISUAL_RANGE = 200.0;
 const STAR_COUNT = 2000;
 const STAR_FLOW_SPEED = 20;
 
-export class Space {
+export class SpaceRenderer implements RendererInterface {
 	canvas: HTMLCanvasElement;
 	context: WebGLRenderingContext;
 
@@ -85,6 +37,9 @@ export class Space {
 		this.context.viewport(0, 0, this.canvas.width, this.canvas.height);
 		this.shaderProgram = this.context.createProgram()!;
 		this.vertexBuffer = this.context.createBuffer()!;
+	}
+
+	stop() {
 	}
 
 	start() {
@@ -194,6 +149,10 @@ void main() {
 			[{ x: 1, y: 1, z: 0 }, 10]
 		];
 		return pickWeightedRandom(weightedRandomArray);
+	}
+
+	update(dt: number) {
+		this.flowStars(dt);
 	}
 
 	flowStars(dt: number) {

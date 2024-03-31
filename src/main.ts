@@ -1,75 +1,129 @@
 import './style.css';
-import { Space } from './space';
+import { SpaceRenderer } from './space_renderer';
+import { RendererInterface } from './renderer';
+import { RainRenderer } from './rain_renderer';
+
+function hideBottomMenu() {
+  const bottomMenu = document.getElementById('bottom_menu') as HTMLDivElement;
+  const easeTimeStep = 5;
+  const alphaStepPerSec = 1;
+  let prevTime = performance.now();
+  let alpha = 1;
+  function easeToTransparent() {
+    const now = performance.now();
+    const dt = (now - prevTime) * 0.001;
+    prevTime = now;
+    alpha -= dt * alphaStepPerSec;
+    if (alpha > 0) {
+      bottomMenu.style.opacity = alpha.toString();
+      setTimeout(easeToTransparent, easeTimeStep);
+    } else {
+      bottomMenu.style.display = 'none';
+      bottomMenu.style.opacity = '0';
+    }
+  }
+  setTimeout(easeToTransparent, easeTimeStep);
+}
+
+function showBottomMenu() {
+  const bottomMenu = document.getElementById('bottom_menu') as HTMLDivElement;
+  const easeTimeStep = 5;
+  const alphaStepPerSec = 1;
+  let prevTime = performance.now();
+  bottomMenu.style.display = 'flex';
+  bottomMenu.style.opacity = "0";
+  let alpha = 0;
+  function easeToOpaque() {
+    const now = performance.now();
+    const dt = (now - prevTime) * 0.001;
+    prevTime = now;
+    alpha += dt * alphaStepPerSec;
+    if (alpha < 1) {
+      bottomMenu.style.opacity = alpha.toString();
+      setTimeout(easeToOpaque, easeTimeStep);
+    } else {
+      bottomMenu.style.opacity = '1';
+    }
+  }
+  setTimeout(easeToOpaque, easeTimeStep);
+}
+
 
 function startApp() {
   console.log('App started');
 
-  const canvas = document.getElementById('game') as HTMLCanvasElement;
-  const space = new Space(canvas);
+
+  const mainCanvas = document.getElementById('main_canvas') as HTMLCanvasElement;
+
+  const rendererMap = new Map<string, RendererInterface>();
+  rendererMap.set('space', new SpaceRenderer(mainCanvas));
+  rendererMap.set('rain', new RainRenderer(mainCanvas));
+
+  let currentRendererName = 'space';
+
+  const spaceButton = document.getElementById('space_button') as HTMLButtonElement;
+  const rainButton = document.getElementById('rain_button') as HTMLButtonElement;
+
+  spaceButton.addEventListener('click', () => {
+    currentRendererName = 'space';
+  });
+
+  rainButton.addEventListener('click', () => {
+    currentRendererName = 'rain';
+  });
 
   let prevTimeStamp = performance.now();
   let deltaTimeSec = 0.001;
 
-  let rotateYaw = 0;
-  let rotatePitch = 0;
-  const rotateMax = Math.PI / 3;
-  const rotateAmount = Math.PI / 4;
-  //let rotateYawPushed = false;
-  let pitchUpPushed = false;
-  let pitchDownPushed = false;
+  function checkMenuToggle(_x: number, _y: number) {
+    const bottomMenu = document.getElementById('bottom_menu') as HTMLDivElement;
 
-  function checkRotateDown(x: number, y: number, pushOrNot: boolean) {
-    if (y > canvas.height * 0.8 &&
-      x > canvas.width * 0.2 &&
-      x < canvas.width * 0.8) {
-      pitchDownPushed = pushOrNot;
+    // toggle display. If it's block, change to none, and vice versa (easing alpha).
+    const display = bottomMenu.style.display;
+    if (display === 'flex') {
+      hideBottomMenu();
+    } else {
+      showBottomMenu();
     }
   }
 
-  canvas.addEventListener('touchstart', (e) => {
-    // if touch on canvas bottom?
+  mainCanvas.addEventListener('touchend', (e) => {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
-      checkRotateDown(touch.clientX, touch.clientY, true);
-    }
-  });
-  canvas.addEventListener('mousedown', (e) => {
-    checkRotateDown(e.clientX, e.clientY, true);
-  });
-
-  // canvas.addEventListener('touchmove', (e) => {
-  // });
-
-  canvas.addEventListener('touchend', (e) => {
-    if (e.touches.length > 0) {
-      const touch = e.touches[0];
-      checkRotateDown(touch.clientX, touch.clientY, false);
+      const x = touch.clientX;
+      const y = touch.clientY;
+      checkMenuToggle(x, y);
     }
   });
 
-  canvas.addEventListener('mouseup', (e) => {
-    checkRotateDown(e.clientX, e.clientY, false);
+  mainCanvas.addEventListener('mouseup', (e) => {
+    const x = e.clientX;
+    const y = e.clientY;
+    checkMenuToggle(x, y);
   });
 
-  space.start();
+  let currentRenderer = rendererMap.get(currentRendererName);
+  currentRenderer?.start();
+
+  let prevRendererName = currentRendererName;
+
   // loop to render the game
   function gameLoop() {
     const nowTimeStamp = performance.now();
     deltaTimeSec = (nowTimeStamp - prevTimeStamp) * 0.001;
     prevTimeStamp = nowTimeStamp;
 
-    if (pitchUpPushed) {
-      rotatePitch = Math.min(rotatePitch + rotateAmount * deltaTimeSec, rotateMax);
-    } else if (pitchDownPushed) {
-      rotatePitch = Math.max(rotatePitch - rotateAmount * deltaTimeSec, -rotateMax);
-    } else {
-      rotatePitch *= 0.5 * deltaTimeSec;
+    if (prevRendererName !== currentRendererName) {
+      currentRenderer?.stop();
+      currentRenderer = rendererMap.get(currentRendererName);
+      currentRenderer?.start();
+      prevRendererName = currentRendererName;
     }
 
-    space.setFlowDirection(rotateYaw, rotatePitch);
-    space.flowStars(deltaTimeSec);
+    currentRenderer = rendererMap.get(currentRendererName);
+    currentRenderer?.update(deltaTimeSec);
+    currentRenderer?.render();
 
-    space.render();
     requestAnimationFrame(gameLoop);
   }
 

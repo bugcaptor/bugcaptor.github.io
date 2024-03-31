@@ -1,7 +1,37 @@
-#game {
+#main_view {
 	position: absolute;
 	top: 0;
 	left: 0;
 	width: 100%;
 	height: 100%;
 }
+
+.main_canvas {
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+#bottom_menu {
+    position: absolute;
+    bottom: 0;
+    height: 20%;
+	align-items: center;
+	justify-content: center;
+	display: flex;
+	width: 100%;
+	flex-direction: row;
+	display: none;
+}
+
+.menu_button {
+	background-color: transparent;
+	flex: 1;
+	height: 100%;
+	font-size: large;
+	color: white;
+	border: 0px;
+}
+
+
