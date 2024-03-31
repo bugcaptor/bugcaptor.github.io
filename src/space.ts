@@ -225,7 +225,7 @@ void main() {
 		const gl = this.context;
 		const vertexBuffer = this.vertexBuffer;
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-		const vertexData = new Float32Array(this.stars.length * 7);
+		const vertexData = new Float32Array(this.stars.length * vertexStride);
 		this.stars.forEach((star, index) => {
 			vertexData[index * vertexStride] = star.position.x;
 			vertexData[index * vertexStride + 1] = star.position.y;
