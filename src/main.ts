@@ -59,7 +59,7 @@ function startApp() {
   rendererMap.set('space', new SpaceRenderer(mainCanvas));
   rendererMap.set('rain', new RainRenderer(mainCanvas));
 
-  let currentRendererName = 'space';
+  let currentRendererName = 'rain';
 
   const spaceButton = document.getElementById('space_button') as HTMLButtonElement;
   const rainButton = document.getElementById('rain_button') as HTMLButtonElement;

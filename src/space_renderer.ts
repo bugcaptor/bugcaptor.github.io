@@ -1,9 +1,10 @@
 import { RendererInterface } from './renderer';
-import { Vector3, clampValue, createShader, dotProduct, pickWeightedRandom, rangedRandom, vectorAdd, vectorMultiplyScalar } from './utility';
+import { clampValue, createShader, glmMat4ToFloat32Array, pickWeightedRandom, rangedRandom, } from './utility';
+import { vec3, mat4 } from 'gl-matrix';
 
 interface Star {
-	position: Vector3;
-	color: Vector3;
+	position: vec3;
+	color: vec3;
 	size: number;
 	speedRatio: number;
 	alpha: number;
@@ -18,10 +19,10 @@ export class SpaceRenderer implements RendererInterface {
 	context: WebGLRenderingContext;
 
 	// webgl default is x(right), y(up), z(out of screen = towards the viewer) = right-handed coordinate system.
-	cameraPosition: Vector3 = { x: 0, y: 0, z: 0 };
-	cameraDirection: Vector3 = { x: 0, y: 0, z: -1 };
-	originalFlowDirection: Vector3 = { x: 0, y: 0, z: 1 };
-	flowDirection: Vector3 = { x: 0, y: 0, z: 1 };
+	cameraPosition: vec3 = vec3.fromValues(0, 0, 0);
+	cameraDirection: vec3 = vec3.fromValues(0, 0, -1);
+	originalFlowDirection: vec3 = vec3.fromValues(0, 0, 1);
+	flowDirection: vec3 = vec3.fromValues(0, 0, 1);
 	stars: Star[] = [];
 
 	shaderProgram: WebGLProgram;
@@ -101,19 +102,19 @@ void main() {
 		this.alpha = 0.0;
 		this.stars = [];
 		this.stars.push({ // default test star.
-			position: { x: 0, y: 0, z: -5 },
-			color: { x: 1, y: 1, z: 1 },
+			position: vec3.fromValues(0, 0, -5),
+			color: vec3.fromValues(1, 1, 1),
 			size: 5.0,
 			speedRatio: 1.0,
 			alpha: 1.0
 		});
 		for (let i = 0; i < STAR_COUNT; i++) {
 			this.stars.push({
-				position: {
-					x: rangedRandom(-1, 1) * STAR_VISUAL_RANGE,
-					y: rangedRandom(-1, 1) * STAR_VISUAL_RANGE,
-					z: rangedRandom(-1, 1) * STAR_VISUAL_RANGE
-				},
+				position: vec3.fromValues(
+					rangedRandom(-1, 1) * STAR_VISUAL_RANGE,
+					rangedRandom(-1, 1) * STAR_VISUAL_RANGE,
+					rangedRandom(-1, 1) * STAR_VISUAL_RANGE
+				),
 				color: this.getStarColor(),
 				size: rangedRandom(1.0, 3.0),
 				speedRatio: this.getStarSpeedRatio(),
@@ -140,13 +141,13 @@ void main() {
 		return pickWeightedRandom(weightedRandomArray);	
 	}
 
-	getStarColor(): Vector3 {
-		const weightedRandomArray: [Vector3, number][] = [// first element is the value, second element is the weight.
-			[{ x: 1, y: 1, z: 1 }, 50],
-			[{ x: 1, y: 0, z: 0 }, 10],
-			[{ x: 0, y: 1, z: 0 }, 10],
-			[{ x: 0, y: 0, z: 1 }, 10],
-			[{ x: 1, y: 1, z: 0 }, 10]
+	getStarColor(): vec3 {
+		const weightedRandomArray: [vec3, number][] = [// first element is the value, second element is the weight.
+			[[1, 1, 1], 50],
+			[[ 1, 0, 0 ], 10],
+			[[ 0, 1, 0 ], 10],
+			[[ 0, 0, 1 ], 10],
+			[[ 1, 1, 0 ], 10]
 		];
 		return pickWeightedRandom(weightedRandomArray);
 	}
@@ -161,16 +162,16 @@ void main() {
 		this.stars.forEach(star => {
 			let position = star.position;
 			// move the star against the camera direction.
-			position = vectorAdd(position, vectorMultiplyScalar(this.flowDirection, flowAmount * star.speedRatio));
+			vec3.add(position, position, vec3.scale(vec3.create(), this.flowDirection, flowAmount * star.speedRatio));
 			star.alpha = clampValue(star.alpha + dt * star.speedRatio, 0.0, 1.0);
-			const outOfVisualRange = Math.abs(position.z) > STAR_VISUAL_RANGE ||
-				Math.abs(position.x) > STAR_VISUAL_RANGE ||
-				Math.abs(position.y) > STAR_VISUAL_RANGE;
-			const outOfScreen = dotProduct(position, this.cameraDirection) < 0;
+			const outOfVisualRange = Math.abs(position[2]) > STAR_VISUAL_RANGE ||
+				Math.abs(position[0]) > STAR_VISUAL_RANGE ||
+				Math.abs(position[1]) > STAR_VISUAL_RANGE;
+			const outOfScreen = (vec3.dot(position, this.cameraDirection) < 0);
 			if (outOfVisualRange || outOfScreen) {
-				position.x = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
-				position.y = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
-				position.z = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
+				position[0] = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
+				position[1] = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
+				position[2] = rangedRandom(-1, 1) * STAR_VISUAL_RANGE;
 				star.alpha = 0.0;
 				star.color = this.getStarColor();
 				star.speedRatio = this.getStarSpeedRatio();
@@ -186,12 +187,12 @@ void main() {
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 		const vertexData = new Float32Array(this.stars.length * vertexStride);
 		this.stars.forEach((star, index) => {
-			vertexData[index * vertexStride] = star.position.x;
-			vertexData[index * vertexStride + 1] = star.position.y;
-			vertexData[index * vertexStride + 2] = star.position.z;
-			vertexData[index * vertexStride + 3] = star.color.x;
-			vertexData[index * vertexStride + 4] = star.color.y;
-			vertexData[index * vertexStride + 5] = star.color.z;
+			vertexData[index * vertexStride] = star.position[0];
+			vertexData[index * vertexStride + 1] = star.position[1];
+			vertexData[index * vertexStride + 2] = star.position[2];
+			vertexData[index * vertexStride + 3] = star.color[0];
+			vertexData[index * vertexStride + 4] = star.color[1];
+			vertexData[index * vertexStride + 5] = star.color[2];
 			vertexData[index * vertexStride + 6] = star.size;
 			vertexData[index * vertexStride + 7] = star.alpha * Math.min(1.0, star.speedRatio);
 		});
@@ -199,61 +200,21 @@ void main() {
 	}
 
 	getViewMatrix() {
-		const cameraPosition = this.cameraPosition;
-		const cameraDirection = vectorMultiplyScalar(this.cameraDirection, -1);
-		const up = { x: 0, y: 1, z: 0 };
+		const cameraTarget = vec3.add(vec3.create(), this.cameraPosition, this.cameraDirection);
+		const up = vec3.fromValues(0, 1, 0);
 
-		const zAxis = cameraDirection;
-		const xAxis = {
-			x: up.y * zAxis.z - up.z * zAxis.y,
-			y: up.z * zAxis.x - up.x * zAxis.z,
-			z: up.x * zAxis.y - up.y * zAxis.x
-		};
-		const yAxis = {
-			x: zAxis.y * xAxis.z - zAxis.z * xAxis.y,
-			y: zAxis.z * xAxis.x - zAxis.x * xAxis.z,
-			z: zAxis.x * xAxis.y - zAxis.y * xAxis.x
-		};
-
-		const viewMatrix = new Float32Array(16);
-
-		viewMatrix[0] = xAxis.x;
-		viewMatrix[1] = yAxis.x;
-		viewMatrix[2] = zAxis.x;
-		viewMatrix[3] = 0;
-
-		viewMatrix[4] = xAxis.y;
-		viewMatrix[5] = yAxis.y;
-		viewMatrix[6] = zAxis.y;
-		viewMatrix[7] = 0;
-
-		viewMatrix[8] = xAxis.z;
-		viewMatrix[9] = yAxis.z;
-		viewMatrix[10] = zAxis.z;
-		viewMatrix[11] = 0;
-
-		viewMatrix[12] = -dotProduct(xAxis, cameraPosition);
-		viewMatrix[13] = -dotProduct(yAxis, cameraPosition);
-		viewMatrix[14] = -dotProduct(zAxis, cameraPosition);
-		viewMatrix[15] = 1;
-
+		const viewMatrix = mat4.lookAt(mat4.create(), this.cameraPosition, cameraTarget, up);
 		return viewMatrix;
 	}
 
 	getProjectionMatrix() {
 		// perspective projection.
-		const fovy = 90.0;
+		const fovy = 90.0 * Math.PI / 180.0;
 		const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
 		const near = 0.1;
-		const far = STAR_VISUAL_RANGE * 2;
-		const f = 1.0 / Math.tan(fovy / 2.0 * Math.PI / 180.0);
-		const projectionMatrix = new Float32Array(16);
-		projectionMatrix[0] = f / aspect;
-		projectionMatrix[5] = f;
-		projectionMatrix[10] = -(far + near) / (far - near);
-		projectionMatrix[11] = -1.0;
-		projectionMatrix[14] = -(2.0 * far * near) / (far - near);
-		return projectionMatrix;
+		const far = 100;
+
+		return mat4.perspective(mat4.create(), fovy, aspect, near, far);
 	}
 
 	render() {
@@ -275,10 +236,10 @@ void main() {
 		gl.useProgram(program);
 
 		const viewMatrixLocation = gl.getUniformLocation(program, 'viewMatrix');
-		gl.uniformMatrix4fv(viewMatrixLocation, false, this.getViewMatrix());
+		gl.uniformMatrix4fv(viewMatrixLocation, false, glmMat4ToFloat32Array(this.getViewMatrix()));
 
 		const projectionMatrixLocation = gl.getUniformLocation(program, 'projectionMatrix');
-		gl.uniformMatrix4fv(projectionMatrixLocation, false, this.getProjectionMatrix());
+		gl.uniformMatrix4fv(projectionMatrixLocation, false, glmMat4ToFloat32Array(this.getProjectionMatrix()));
 
 		// Set up attribute pointers
 		const vertexStride = 8 * Float32Array.BYTES_PER_ELEMENT;
@@ -303,30 +264,5 @@ void main() {
 
 		// Draw points
 		gl.drawArrays(gl.POINTS, 0, this.stars.length);
-	}
-
-	setFlowDirection(yaw: number, pitch: number) {
-		// rotate only cameraDirection vector.
-		const flowDirection = this.originalFlowDirection;
-
-		// rotate around y-axis.
-		const cosYaw = Math.cos(yaw);
-		const sinYaw = Math.sin(yaw);
-		const newCameraDirection = {
-			x: flowDirection.x * cosYaw - flowDirection.z * sinYaw,
-			y: flowDirection.y,
-			z: flowDirection.x * sinYaw + flowDirection.z * cosYaw
-		};
-
-		// rotate around x-axis.
-		const cosPitch = Math.cos(pitch);
-		const sinPitch = Math.sin(pitch);
-		const newCameraDirection2 = {
-			x: newCameraDirection.x,
-			y: newCameraDirection.y * cosPitch - newCameraDirection.z * sinPitch,
-			z: newCameraDirection.y * sinPitch + newCameraDirection.z * cosPitch
-		};
-
-		this.flowDirection = newCameraDirection2;
 	}
 }

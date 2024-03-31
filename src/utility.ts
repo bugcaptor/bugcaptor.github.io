@@ -1,24 +1,23 @@
+import { vec3, mat4 } from 'gl-matrix';
 
-export interface Vector3 {
-	x: number;
-	y: number;
-	z: number;
+export function degreesToRadians(degrees: number): number {
+	return degrees * Math.PI / 180;
 }
 
-export function vectorAdd(a: Vector3, b: Vector3): Vector3 {
-	return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
+export function radiansToDegrees(radians: number): number {
+	return radians * 180 / Math.PI;
 }
 
-// function vectorSubtract(a: Vector3, b: Vector3): Vector3 {
-// 	return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
-// }
-
-export function vectorMultiplyScalar(a: Vector3, b: number): Vector3 {
-	return { x: a.x * b, y: a.y * b, z: a.z * b };
+export function glmVec3ToFloat32Array(glmVec3: vec3): Float32Array {
+	return new Float32Array([glmVec3[0], glmVec3[1], glmVec3[2]]);
 }
 
-export function dotProduct(a: Vector3, b: Vector3): number {
-	return a.x * b.x + a.y * b.y + a.z * b.z;
+export function glmMat4ToFloat32Array(glmMat4: mat4): Float32Array {
+	const float32Array = new Float32Array(16);
+	for (let i = 0; i < 16; i++) {
+		float32Array[i] = glmMat4[i];
+	}
+	return float32Array;
 }
 
 export function rangedRandom(min: number, max: number): number {
