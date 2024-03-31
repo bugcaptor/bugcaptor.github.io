@@ -2,6 +2,7 @@ import './style.css';
 import { SpaceRenderer } from './space_renderer';
 import { RendererInterface } from './renderer';
 import { RainRenderer } from './rain_renderer';
+import { pickWeightedRandom } from './utility';
 
 function hideBottomMenu() {
   const bottomMenu = document.getElementById('bottom_menu') as HTMLDivElement;
@@ -52,14 +53,17 @@ function showBottomMenu() {
 function startApp() {
   console.log('App started');
 
-
   const mainCanvas = document.getElementById('main_canvas') as HTMLCanvasElement;
 
   const rendererMap = new Map<string, RendererInterface>();
   rendererMap.set('space', new SpaceRenderer(mainCanvas));
   rendererMap.set('rain', new RainRenderer(mainCanvas));
 
-  let currentRendererName = 'rain';
+  let currentRendererName = 'space';
+  // random pick evenly.
+  const rendererNames = Array.from(rendererMap.keys());
+  currentRendererName = pickWeightedRandom(rendererNames.map(name => [name, 1]));
+  console.log('currentRendererName:', currentRendererName);
 
   const spaceButton = document.getElementById('space_button') as HTMLButtonElement;
   const rainButton = document.getElementById('rain_button') as HTMLButtonElement;

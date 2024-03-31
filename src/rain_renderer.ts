@@ -9,11 +9,23 @@ interface Raindrop {
 	alpha: number;
 }
 
+interface Ripple {
+	position: vec3;
+	radius: number;
+	alpha: number;
+}
+
 const RAIN_DROP_SPEED = 20;
-const RAIN_DROP_COUNT = 500;
-const RAINING_RANGE = 10;
-const RAINING_FROM_HEIGHT = 4;
+const RAIN_DROP_COUNT = 1000;
+const RAINING_RANGE = 20;
+const RAINING_FROM_HEIGHT = 10;
 const RAINDROP_TAIL_LENGTH = 0.1;
+const RANIDROP_MAX_ALPHA = 0.7;
+const RANIDROP_MAX_ALPHA_TAIL = 0.1;
+
+const RIPPLE_EXPAND_SPEED = 1;
+const RIPPLE_RADIUS_MAX = 0.1;
+const RIPPLE_MAX_ALPHA = 0.25;
 
 export class RainRenderer implements RendererInterface {
 	canvas: HTMLCanvasElement;
@@ -21,15 +33,18 @@ export class RainRenderer implements RendererInterface {
 
 	// webgl default is x(right), y(up), z(out of screen = towards the viewer) = right-handed coordinate system.
 	cameraTargetPosition: vec3 = vec3.fromValues(0, 2, 0);
-	cameraDistance: number = 5;
-	cameraPitchRadians: number = degreesToRadians(15);
+	cameraDistance: number = 10;
+	cameraPitchRadians: number = degreesToRadians(5);
 	raindrops: Raindrop[] = [];
 	groundY: number = 0;
 
 	shaderProgram: WebGLProgram;
 	vertexBuffer: WebGLBuffer;
+	lastVertexCount: number = 0;
 
 	alpha: number = 0.0;
+
+	ripples: Ripple[] = [];
 
 	constructor(canvasElement: HTMLCanvasElement) {
 		this.canvas = canvasElement;
@@ -43,7 +58,7 @@ export class RainRenderer implements RendererInterface {
 
 	stop() {
 	}
-	
+
 	start() {
 		this.initiateRaindrops();
 
@@ -56,7 +71,6 @@ uniform mat4 projectionMatrix;
 varying float vAlpha;
 void main() {
 	gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0);
-	gl_PointSize = 5.0;
 	vAlpha = alpha;
 }
 	  `;
@@ -110,13 +124,16 @@ void main() {
 			};
 			this.raindrops.push(raindrop);
 		}
+
+		this.ripples = [];
 	}
 
 	update(dt: number) {
-		this.drop(dt);
+		this.updateDrops(dt);
+		this.updateRipples(dt);
 	}
 
-	drop(dt: number) {
+	updateDrops(dt: number) {
 		this.alpha = clampValue(this.alpha + dt * 0.1, 0.0, 1.0);
 
 		const dropHeight = RAIN_DROP_SPEED * dt;
@@ -126,6 +143,8 @@ void main() {
 
 			position[1] -= dropHeight * drop.speedRatio;
 			if (position[1] < this.groundY) {
+				// make an ripple effect.
+				this.makeRipple(vec3.fromValues(position[0], this.groundY, position[2]));
 				// reset the drop.
 				position[0] = rangedRandom(-1, 1) * RAINING_RANGE;
 				position[1] = rangedRandom(0.9, 1.5) * RAINING_FROM_HEIGHT;
@@ -133,11 +152,61 @@ void main() {
 				drop.speedRatio = rangedRandom(0.5, 1.2);
 				drop.tailLength = rangedRandom(0.1, 1.0) * RAINDROP_TAIL_LENGTH;
 				drop.alpha = rangedRandom(0.2, 0.5);
-				// TODO: make an ripple effect.
 			}
 
 			drop.position = position;
 		});
+	}
+
+	updateRipples(dt: number) {
+		for (let i = 0; i < this.ripples.length; i++) {
+			const ripple = this.ripples[i];
+			if (ripple.radius < 0) {
+				continue;
+			}
+			ripple.radius += dt * RIPPLE_EXPAND_SPEED;
+			ripple.alpha = clampValue(1 - ripple.radius / RIPPLE_RADIUS_MAX, -1, 1);
+			if (ripple.alpha <= 0) {
+				ripple.radius = -1;
+				ripple.alpha = 0;
+			}
+		}
+	}
+
+	makeRipple(position: vec3) {
+		// find empty ripple slot.
+		let emptyRippleIndex = -1;
+		for (let i = 0; i < this.ripples.length; i++) {
+			// if radius is 0 or less, it's empty.
+			if (this.ripples[i].radius < -1e-6) {
+				emptyRippleIndex = i;
+				break;
+			}
+		}
+		if (emptyRippleIndex === -1) {
+			emptyRippleIndex = this.ripples.length;
+			this.ripples.push({
+				position: position,
+				radius: rangedRandom(0.2, 0.5) * RIPPLE_RADIUS_MAX,
+				alpha: 1,
+			});
+		} else {
+			this.ripples[emptyRippleIndex].radius = rangedRandom(0.1, 0.3) * RIPPLE_RADIUS_MAX;
+			this.ripples[emptyRippleIndex].alpha = 1;
+			this.ripples[emptyRippleIndex].position = position;
+		}
+	}
+
+	getActiveRipples(): Ripple[] {
+		const activeRipples: Ripple[] = [];
+		for (let i = 0; i < this.ripples.length; i++) {
+			const ripple = this.ripples[i];
+			if (ripple.radius < 0) {
+				continue;
+			}
+			activeRipples.push(ripple);
+		}
+		return activeRipples;
 	}
 
 	updateVertexBuffer() {
@@ -146,19 +215,55 @@ void main() {
 		const gl = this.context;
 		const vertexBuffer = this.vertexBuffer;
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-		const vertexData = new Float32Array(this.raindrops.length * dropStride);
+
+		const activeRipples = this.getActiveRipples();
+		const rippleSegmentCount = 8;
+
+		const vertexData = new Float32Array(this.raindrops.length * dropStride + activeRipples.length * rippleSegmentCount * 2 * vertexStride);
 		this.raindrops.forEach((drop, index) => {
 			vertexData[index * dropStride] = drop.position[0];
 			vertexData[index * dropStride + 1] = drop.position[1];
 			vertexData[index * dropStride + 2] = drop.position[2];
-			vertexData[index * dropStride + 3] = drop.alpha * this.alpha;
+			vertexData[index * dropStride + 3] = drop.alpha * this.alpha * RANIDROP_MAX_ALPHA_TAIL;
 
 			vertexData[index * dropStride + 4] = drop.position[0];
 			vertexData[index * dropStride + 5] = drop.position[1] - drop.tailLength;
 			vertexData[index * dropStride + 6] = drop.position[2];
-			vertexData[index * dropStride + 7] = drop.alpha * this.alpha;
+			vertexData[index * dropStride + 7] = drop.alpha * this.alpha * RANIDROP_MAX_ALPHA;
 
 		});
+
+		//
+		let rippleOffset = this.raindrops.length * dropStride;
+		for (let iRipple = 0; iRipple < activeRipples.length; ++iRipple) {
+			// make a circle.
+			const rippleCenter = activeRipples[iRipple].position;
+			const rippleRadius = activeRipples[iRipple].radius;
+			const rippleAlpha = activeRipples[iRipple].alpha;
+			for (let iSegment = 0; iSegment < rippleSegmentCount; ++iSegment) {
+				const angle = Math.PI * 2 * iSegment / rippleSegmentCount;
+				const x = Math.cos(angle) * rippleRadius + rippleCenter[0];
+				const z = Math.sin(angle) * rippleRadius + rippleCenter[2];
+
+				const angle2 = Math.PI * 2 * (iSegment + 1) / rippleSegmentCount;
+				const x2 = Math.cos(angle2) * rippleRadius + rippleCenter[0];
+				const z2 = Math.sin(angle2) * rippleRadius + rippleCenter[2];
+
+				vertexData[rippleOffset + 0] = x;
+				vertexData[rippleOffset + 1] = rippleCenter[1];
+				vertexData[rippleOffset + 2] = z;
+				vertexData[rippleOffset + 3] = rippleAlpha * this.alpha * RIPPLE_MAX_ALPHA;
+
+				vertexData[rippleOffset + 4] = x2;
+				vertexData[rippleOffset + 5] = rippleCenter[1];
+				vertexData[rippleOffset + 6] = z2;
+				vertexData[rippleOffset + 7] = rippleAlpha * this.alpha * RIPPLE_MAX_ALPHA;
+
+				rippleOffset += vertexStride * 2;
+			}
+		}
+
+		this.lastVertexCount = vertexData.length / vertexStride;
 
 		gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
 	}
@@ -199,7 +304,7 @@ void main() {
 		// alpha blend
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-		
+
 		// update vertex buffer.
 		const program = this.shaderProgram;
 		gl.useProgram(program);
@@ -221,6 +326,6 @@ void main() {
 		gl.vertexAttribPointer(alphaAttributeLocation, 1, gl.FLOAT, false, vertexStride, 3 * Float32Array.BYTES_PER_ELEMENT);
 
 		// Draw lines
-		gl.drawArrays(gl.LINES, 0, this.raindrops.length * 2);
+		gl.drawArrays(gl.LINES, 0, this.lastVertexCount);
 	}
 }
