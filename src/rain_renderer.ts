@@ -19,13 +19,21 @@ const RAIN_DROP_SPEED = 20;
 const RAIN_DROP_COUNT = 1000;
 const RAINING_RANGE = 20;
 const RAINING_FROM_HEIGHT = 10;
-const RAINDROP_TAIL_LENGTH = 0.1;
-const RANIDROP_MAX_ALPHA = 0.7;
-const RANIDROP_MAX_ALPHA_TAIL = 0.1;
+const RAINDROP_TAIL_LENGTH = 0.5;
+const RANIDROP_MAX_ALPHA = 0.6;
+const RANIDROP_MAX_ALPHA_TAIL = 0.2;
 
-const RIPPLE_EXPAND_SPEED = 1;
-const RIPPLE_RADIUS_MAX = 0.1;
-const RIPPLE_MAX_ALPHA = 0.25;
+const RIPPLE_EXPAND_SPEED = 0.5;
+const RIPPLE_RADIUS_MAX = 0.25;
+const RIPPLE_MAX_ALPHA = 0.5;
+const RIPPLE_CIRCLE_SEGMENT_COUNT = 16;
+
+const LIGHTNING_INTERVAL_MIN = 5;
+const LIGHTNING_INTERVAL_MAX = 60;
+const LIGHTNING_INTERVAL_SUB_COUNT_MAX = 3;
+const LIGHTNING_PEAK_PROBABILITY = 0.5;
+const LIGHTNING_ALPHA_DECAY_SPEED = 5;
+const LIGHTNING_ALPHA_MIN = 0.5;
 
 export class RainRenderer implements RendererInterface {
 	canvas: HTMLCanvasElement;
@@ -45,6 +53,11 @@ export class RainRenderer implements RendererInterface {
 	alpha: number = 0.0;
 
 	ripples: Ripple[] = [];
+
+	nextLightningTime: number = 0;
+	currentLightningCount: number = 0;
+	currentRemainedLightningCount: number = 0;
+	currentLightningAlpha: number = 0;
 
 	constructor(canvasElement: HTMLCanvasElement) {
 		this.canvas = canvasElement;
@@ -131,6 +144,28 @@ void main() {
 	update(dt: number) {
 		this.updateDrops(dt);
 		this.updateRipples(dt);
+		this.updateLightning(dt);
+	}
+
+	updateLightning(dt: number) {
+		const now = performance.now();
+		if (now > this.nextLightningTime) {
+			const nextInterval = rangedRandom(LIGHTNING_INTERVAL_MIN, LIGHTNING_INTERVAL_MAX);
+			console.log('Next lightning in ', Math.floor(nextInterval), ' seconds');
+			this.nextLightningTime = now + nextInterval * 1000;
+			this.currentLightningCount = this.currentRemainedLightningCount = Math.floor(rangedRandom(1, LIGHTNING_INTERVAL_SUB_COUNT_MAX));
+		} else {
+			const decaySpeed = (this.currentRemainedLightningCount > 0) ? LIGHTNING_ALPHA_DECAY_SPEED : 1;
+			this.currentLightningAlpha = Math.max(0, this.currentLightningAlpha - dt * decaySpeed);
+			if (this.currentRemainedLightningCount > 0 && this.currentLightningAlpha < 1e-4) {
+				const rng = Math.random();
+				if (rng < LIGHTNING_PEAK_PROBABILITY) {
+					console.log('Lightning!', this.currentRemainedLightningCount, this.currentLightningAlpha);
+					this.currentLightningAlpha = rangedRandom(LIGHTNING_ALPHA_MIN, 1);
+					this.currentRemainedLightningCount -= 1;
+				}
+			}
+		}
 	}
 
 	updateDrops(dt: number) {
@@ -217,7 +252,7 @@ void main() {
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 
 		const activeRipples = this.getActiveRipples();
-		const rippleSegmentCount = 8;
+		const rippleSegmentCount = RIPPLE_CIRCLE_SEGMENT_COUNT;
 
 		const vertexData = new Float32Array(this.raindrops.length * dropStride + activeRipples.length * rippleSegmentCount * 2 * vertexStride);
 		this.raindrops.forEach((drop, index) => {
@@ -298,7 +333,8 @@ void main() {
 
 		// clear black.
 		const gl = this.context;
-		gl.clearColor(0, 0, 0, 1);
+		const clearColorIntensity = this.currentLightningAlpha * 0.75 + 0.25;
+		gl.clearColor(clearColorIntensity, clearColorIntensity, clearColorIntensity, 1);
 		gl.clear(this.context.COLOR_BUFFER_BIT | this.context.DEPTH_BUFFER_BIT);
 
 		// alpha blend
