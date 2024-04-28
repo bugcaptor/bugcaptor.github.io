@@ -13,6 +13,7 @@
   - Developed in-house groupware for knowledge sharing and task management
 - JamieSD/JCE - Priest Online
   - Engine Programmer. (including patch and file system base, except terrain structure core)
+  - FreeStyle used same engine.
 - CSE
 
 
