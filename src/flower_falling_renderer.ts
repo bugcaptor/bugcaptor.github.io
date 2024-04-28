@@ -12,7 +12,7 @@ const FLOWER_LEAF_COUNT = 1000;
 const FLOWER_LEAF_RANGE = 20;
 const FLOWER_LEAF_FALLING_HEIGHT = 20;
 const FLOWER_FALLING_SPEED = 5.1;
-const FLOWER_SCALING = 0.1;
+const FLOWER_SCALING = 0.15;
 const WIND_VECTOR = vec3.fromValues(-3.5, 0, 2.85);
 
 export class FlowerFallingRenderer implements RendererInterface {
