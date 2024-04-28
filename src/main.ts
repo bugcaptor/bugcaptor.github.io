@@ -2,6 +2,7 @@ import './style.css';
 import { SpaceRenderer } from './space_renderer';
 import { RendererInterface } from './renderer';
 import { RainRenderer } from './rain_renderer';
+import { FlowerFallingRenderer } from './flower_falling_renderer';
 import { pickWeightedRandom } from './utility';
 
 function hideBottomMenu() {
@@ -58,6 +59,7 @@ function startApp() {
   const rendererMap = new Map<string, RendererInterface>();
   rendererMap.set('space', new SpaceRenderer(mainCanvas));
   rendererMap.set('rain', new RainRenderer(mainCanvas));
+  rendererMap.set('flower_falling', new FlowerFallingRenderer(mainCanvas));
 
   let currentRendererName = 'space';
   // random pick evenly.
@@ -67,6 +69,7 @@ function startApp() {
 
   const spaceButton = document.getElementById('space_button') as HTMLButtonElement;
   const rainButton = document.getElementById('rain_button') as HTMLButtonElement;
+  const flowerFallingButton = document.getElementById('flower_falling_button') as HTMLButtonElement;
 
   spaceButton.addEventListener('click', () => {
     currentRendererName = 'space';
@@ -74,6 +77,10 @@ function startApp() {
 
   rainButton.addEventListener('click', () => {
     currentRendererName = 'rain';
+  });
+
+  flowerFallingButton.addEventListener('click', () => {
+    currentRendererName = 'flower_falling';
   });
 
   let prevTimeStamp = performance.now();
