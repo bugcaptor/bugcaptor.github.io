@@ -1,5 +1,5 @@
 import { RendererInterface } from './renderer';
-import { clampValue, createShader, degreesToRadians, rangedRandom } from './utility';
+import { createShader, degreesToRadians, rangedRandom } from './utility';
 import { mat4, vec3 } from 'gl-matrix';
 
 interface FlowerLeaf {
