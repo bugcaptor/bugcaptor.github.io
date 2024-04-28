@@ -46,7 +46,7 @@ export class FlowerFallingRenderer implements RendererInterface {
 	}
 
 	start() {
-		this.initiateRaindrops();
+		this.initiateFlowerFalling();
 
 		// Vertex shader source code
 		const vertexShaderSource = `
@@ -89,7 +89,7 @@ void main() {
 		this.shaderProgram = program;
 	}
 
-	initiateRaindrops() {
+	initiateFlowerFalling() {
 		this.alpha = 0.0;
 		this.flowerLeaves = [];
 
