@@ -4,6 +4,7 @@ import { RendererInterface } from './renderer';
 import { RainRenderer } from './rain_renderer';
 import { FlowerFallingRenderer } from './flower_falling_renderer';
 import { pickWeightedRandom } from './utility';
+import { WaveBreakingRenderer } from './wave_break_renderer';
 
 function hideBottomMenu() {
   const bottomMenu = document.getElementById('bottom_menu') as HTMLDivElement;
@@ -60,6 +61,7 @@ function startApp() {
   rendererMap.set('space', new SpaceRenderer(mainCanvas));
   rendererMap.set('rain', new RainRenderer(mainCanvas));
   rendererMap.set('flower_falling', new FlowerFallingRenderer(mainCanvas));
+  rendererMap.set('wave_breaking', new WaveBreakingRenderer(mainCanvas));
 
   let currentRendererName = 'space';
   // random pick evenly.
@@ -70,6 +72,7 @@ function startApp() {
   const spaceButton = document.getElementById('space_button') as HTMLButtonElement;
   const rainButton = document.getElementById('rain_button') as HTMLButtonElement;
   const flowerFallingButton = document.getElementById('flower_falling_button') as HTMLButtonElement;
+  const waveBreakingButton = document.getElementById('wave_breaking_button') as HTMLButtonElement;
 
   spaceButton.addEventListener('click', () => {
     currentRendererName = 'space';
@@ -82,6 +85,12 @@ function startApp() {
   flowerFallingButton.addEventListener('click', () => {
     currentRendererName = 'flower_falling';
   });
+
+  if (waveBreakingButton != null) {
+    waveBreakingButton.addEventListener('click', () => {
+      currentRendererName = 'wave_breaking';
+    });
+  }
 
   let prevTimeStamp = performance.now();
   let deltaTimeSec = 0.001;
