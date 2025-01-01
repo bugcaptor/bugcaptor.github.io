@@ -20,6 +20,7 @@
 ## Things I Am Passionate About
 - Prototyping
 - Toy projects
+- Abstract design discussion
 - Simulating reality with computers
 - Finding inspiration and knowledge in books and media
 - Trying new approaches
