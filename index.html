@@ -1,10 +1,16 @@
 <!doctype html>
-<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/css/style.css" />
   <title>:] I'm bugcaptor probably...</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+  <script src="src/utility.js"></script>
+  <script src="src/space_renderer.js"></script>
+  <script src="src/rain_renderer.js"></script>
+  <script src="src/flower_falling_renderer.js"></script>
+  <script src="src/wave_break_renderer.js"></script>
 </head>
 
 <body>
@@ -13,12 +19,13 @@
   </div>
   <div id="bottom_menu">
     <button id="space_button" class="menu_button">Space</button>
-    <button id="github_button" class="menu_button"><a href="https://github.com/bugcaptor/bugcaptor.github.io">About Me<br/><img src="/github-mark.png" width="16" alt="about me button"/></a></button>
+    <button id="github_button" class="menu_button"><a href="https://github.com/bugcaptor/bugcaptor.github.io">About
+        Me<br /><img src="public/github-mark.png" width="16" alt="about me button" /></a></button>
     <button id="rain_button" class="menu_button">Rain</button>
     <button id="flower_falling_button" class="menu_button">Flower Falling</button>
     <!--<button id="wave_breaking_button" class="menu_button">Wave Breaking</button>-->
   </div>
-  <script type="module" src="/src/main.ts"></script>
+  <script src="src/main.js"></script>
 </body>
 
 </html>
