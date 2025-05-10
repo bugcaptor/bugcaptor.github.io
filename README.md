@@ -1,5 +1,5 @@
 # About me
-![me](https://bugcaptor.github.io/me.jpg)
+![me](https://bugcaptor.github.io/public/me.jpg)
 
 - Computer Game Programmer
 
