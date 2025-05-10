@@ -54,7 +54,7 @@ function startApp() {
   rendererMap.set('space', new SpaceRenderer(mainCanvas));
   rendererMap.set('rain', new RainRenderer(mainCanvas));
   rendererMap.set('flower_falling', new FlowerFallingRenderer(mainCanvas));
-  rendererMap.set('wave_breaking', new WaveBreakingRenderer(mainCanvas));
+  // TODO: rendererMap.set('wave_breaking', new WaveBreakingRenderer(mainCanvas));
 
   let currentRendererName = 'space';
   // random pick evenly.
