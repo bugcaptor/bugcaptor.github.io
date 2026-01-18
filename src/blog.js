@@ -23,6 +23,18 @@ function startBlogFormatting() {
 
 
     const rootDiv = document.createElement('div');
+
+    // Add back-to-blog link if not on the main blog page
+    const currentPath = window.location.pathname;
+    const isBlogIndex = currentPath.endsWith('/blog/') || currentPath.endsWith('/blog/index.html');
+
+    if (!isBlogIndex) {
+        const backLink = document.createElement('div');
+        backLink.className = 'back-to-blog';
+        backLink.innerHTML = '<a href="/blog/index.html">← 블로그로 돌아가기</a>';
+        rootDiv.appendChild(backLink);
+    }
+
     // add blog posts.
     blogHtmls.forEach(html => {
         const div = document.createElement('div');
